@@ -4,51 +4,68 @@ import 'package:flutter/services.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 class FlutterWallet {
-  static const MethodChannel _channel = const MethodChannel('flutter_wallet_handler');
+  static const MethodChannel _channel =
+      const MethodChannel('flutter_wallet_handler');
 
   static final FlutterWallet _instance = FlutterWallet._internal();
 
   /// Associate each rendered Widget to its `onPressed` event handler
-  static final Map<String, FutureOr<dynamic> Function(MethodCall)> _handlers = Map();
+  static final Map<String, FutureOr<dynamic> Function(MethodCall)> _handlers =
+      Map();
 
-  static FutureOr<PKAddPaymentPassRequest> Function(List<String>, String, String)? _applePayOnDataHandler;
+  static FutureOr<PKAddPaymentPassRequest> Function(
+      List<String>, String, String) _applePayOnDataHandler;
 
   // Returns whether this app can add payment passes or not on iOS.
   static Future<bool> canAddPaymentPass() async {
-    if (Platform.isIOS) return (await _channel.invokeMethod('canAddPaymentPass')) == true;
+    if (Platform.isIOS)
+      return (await _channel.invokeMethod('canAddPaymentPass')) == true;
     return false;
   }
 
   // For Android only. Adds a card to Google Pay.
-  static Future<void> initiateGooglePayCardFlow({required String displayName, required String phoneNumber, required FutureOr<GooglePayRequest> Function(String walletId, String deviceId) onData}) async {
+  static Future<void> initiateGooglePayCardFlow(
+      {String displayName,
+      String phoneNumber,
+      FutureOr<GooglePayRequest> Function(String walletId, String deviceId)
+          onData}) async {
     final walletId = await getGooglePayWalletId();
 
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
     AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
 
-    final response = await onData(walletId, androidInfo.androidId!);
+    final response = await onData(walletId, androidInfo.androidId);
 
     await _channel.invokeMethod('addCardToGooglePay', {
       "displayName": displayName,
       "last4": response.last4,
       "opaquePaymentCard": response.opaquePaymentCard,
       "phoneNumber": phoneNumber,
-      "address": {"addressLine1": response.address.addressLine1, "addressLine2": response.address.addressLine2, "city": response.address.city, "country": response.address.country, "postalCode": response.address.postalCode}
+      "address": {
+        "addressLine1": response.address.addressLine1,
+        "addressLine2": response.address.addressLine2,
+        "city": response.address.city,
+        "country": response.address.country,
+        "postalCode": response.address.postalCode
+      }
     });
   }
 
   // For iOS. At least one of cardholder name or primaryAccountSuffix must be supplied.
   static Future<dynamic> initiateiOSAddPaymentPassFlow(
-      {String? cardholderName,
-      String? primaryAccountSuffix,
-      String? localizedDescription,
-      String? primaryAccountIdentifier,
-      String? paymentNetwork,
-      required FutureOr<PKAddPaymentPassRequest> Function(List<String> certificates, String nonce, String nonceSignature) onData}) async {
+      {String cardholderName,
+      String primaryAccountSuffix,
+      String localizedDescription,
+      String primaryAccountIdentifier,
+      String paymentNetwork,
+      FutureOr<PKAddPaymentPassRequest> Function(
+              List<String> certificates, String nonce, String nonceSignature)
+          onData}) async {
     _applePayOnDataHandler = onData;
 
     try {
-      final response = await _channel.invokeMethod('initiateAddPaymentPassFlow', {
+      final response =
+          await _channel.invokeMethod('initiateAddPaymentPassFlow', {
         "cardholderName": cardholderName,
         "primaryAccountSuffix": primaryAccountSuffix,
         "localizedDescription": localizedDescription,
@@ -62,7 +79,8 @@ class FlutterWallet {
     }
   }
 
-  static Future<String> getGooglePayWalletId() async => await _channel.invokeMethod('getGooglePayWalletId');
+  static Future<String> getGooglePayWalletId() async =>
+      await _channel.invokeMethod('getGooglePayWalletId');
 
   factory FlutterWallet() => _instance;
 
@@ -75,12 +93,18 @@ class FlutterWallet {
   Future<dynamic> _handleCalls(MethodCall call) async {
     if (call.method == "onApplePayDataReceived" && call.arguments is Map) {
       if (_applePayOnDataHandler != null) {
-        final certs = (call.arguments["certificatesBase64"] as List<dynamic>).map((e) => e.toString()).toList(growable: false);
+        final certs = (call.arguments["certificatesBase64"] as List<dynamic>)
+            .map((e) => e.toString())
+            .toList(growable: false);
         final nonce = call.arguments["nonceBase64"] as String;
         final nonceSignature = call.arguments["nonceSignatureBase64"] as String;
 
-        final req = await _applePayOnDataHandler!(certs, nonce, nonceSignature);
-        return <String, dynamic>{"encryptedPassData": req.encryptedPassData, "activationData": req.activationData, "ephemeralPublicKey": req.ephemeralPublicKey};
+        final req = await _applePayOnDataHandler(certs, nonce, nonceSignature);
+        return <String, dynamic>{
+          "encryptedPassData": req.encryptedPassData,
+          "activationData": req.activationData,
+          "ephemeralPublicKey": req.ephemeralPublicKey
+        };
       }
     } else if (call.method == "onApplePayFinished") {}
 
@@ -88,7 +112,8 @@ class FlutterWallet {
     return handler != null ? await handler(call) : null;
   }
 
-  Future<void> addHandler<T>(String key, FutureOr<T> Function(MethodCall) handler) async {
+  Future<void> addHandler<T>(
+      String key, FutureOr<T> Function(MethodCall) handler) async {
     _handlers[key] = handler;
   }
 
@@ -106,7 +131,8 @@ class PKAddPaymentPassRequest {
   final String activationData;
   final String ephemeralPublicKey;
 
-  const PKAddPaymentPassRequest(this.encryptedPassData, this.activationData, this.ephemeralPublicKey);
+  const PKAddPaymentPassRequest(
+      this.encryptedPassData, this.activationData, this.ephemeralPublicKey);
 }
 
 class GooglePayRequest {
@@ -120,5 +146,10 @@ class GooglePayRequest {
 class GoogleUserAddress {
   final String addressLine1, addressLine2, city, country, postalCode;
 
-  const GoogleUserAddress({required this.addressLine1, required this.addressLine2, required this.city, required this.country, required this.postalCode});
+  const GoogleUserAddress(
+      {this.addressLine1,
+      this.addressLine2,
+      this.city,
+      this.country,
+      this.postalCode});
 }

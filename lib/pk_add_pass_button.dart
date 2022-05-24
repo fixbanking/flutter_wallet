@@ -12,18 +12,25 @@ class PKAddPassButton extends StatefulWidget {
 
   final double width;
   final double height;
-  final Widget? unsupportedPlatformChild;
-  final Function? onPressed; // called when the button is pressed.
+  final Widget unsupportedPlatformChild;
+  final Function onPressed; // called when the button is pressed.
   final String _id = Uuid().v4();
 
-  PKAddPassButton({Key? key, required this.width, required this.height, this.unsupportedPlatformChild, this.onPressed}) : super(key: key);
+  PKAddPassButton(
+      {Key key,
+      this.width,
+      this.height,
+      this.unsupportedPlatformChild,
+      this.onPressed})
+      : super(key: key);
 
   @override
   _PKAddPassButtonState createState() => _PKAddPassButtonState();
 }
 
 class _PKAddPassButtonState extends State<PKAddPassButton> {
-  get uiKitCreationParams => {'width': widget.width, 'height': widget.height, 'key': widget._id};
+  get uiKitCreationParams =>
+      {'width': widget.width, 'height': widget.height, 'key': widget._id};
 
   @override
   void initState() {
@@ -34,7 +41,7 @@ class _PKAddPassButtonState extends State<PKAddPassButton> {
   Future<dynamic> _onMethodCall(MethodCall call) async {
     switch (call.method) {
       case "onApplePayButtonPressed":
-        if (widget.onPressed != null) widget.onPressed!();
+        if (widget.onPressed != null) widget.onPressed();
         break;
       default:
         return null;
@@ -42,7 +49,10 @@ class _PKAddPassButtonState extends State<PKAddPassButton> {
   }
 
   @override
-  Widget build(BuildContext context) => Container(width: widget.width, height: widget.height, child: platformWidget(context));
+  Widget build(BuildContext context) => Container(
+      width: widget.width,
+      height: widget.height,
+      child: platformWidget(context));
 
   Widget platformWidget(BuildContext context) {
     switch (defaultTargetPlatform) {
@@ -54,8 +64,9 @@ class _PKAddPassButtonState extends State<PKAddPassButton> {
           creationParamsCodec: const StandardMessageCodec(),
         );
       default:
-        if (widget.unsupportedPlatformChild == null) throw UnsupportedError('Unsupported platform view');
-        return widget.unsupportedPlatformChild!;
+        if (widget.unsupportedPlatformChild == null)
+          throw UnsupportedError('Unsupported platform view');
+        return widget.unsupportedPlatformChild;
     }
   }
 

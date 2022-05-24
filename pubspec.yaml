@@ -1,17 +1,17 @@
 name: flutter_wallet
 description: A new flutter plugin project.
 version: 0.0.1
-homepage:
+homepage: https://github.com/fixbanking/flutter_wallet
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
+  sdk: ">=2.10.0 <3.0.0"
   flutter: ">=1.20.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  uuid: ^3.0.4
-  device_info_plus: ^3.1.1
+  uuid: 
+  device_info_plus: 
 
 dev_dependencies:
   flutter_test:
